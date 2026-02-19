@@ -138,7 +138,7 @@ Docker es ideal porque empaqueta todo (incluyendo Chrome y sus dependencias) en 
 
     ```bash
     # Asegúrate de tener tu archivo .env listo
-    docker run -d --name mi-bot --env-file .env --restart unless-stopped gcal-bot
+    docker run -d --name mi-bot --env-file .env --restart unless-stopped --shm-size=2g gcal-bot
     ```
 
 4.  **Ver logs**:
