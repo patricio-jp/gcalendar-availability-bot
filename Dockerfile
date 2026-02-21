@@ -1,17 +1,13 @@
 # Base image
 FROM python:3.11-slim
 
-# Install dependencies for Chrome and Selenium
-RUN apt-get update && apt-get install -y \
-  wget \
-  gnupg \
-  unzip \
-  # Download the key, dearmor it, and place it in keyrings
-  && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome-keyring.gpg \
-  # Add the repository referencing the keyring
-  && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
-  && apt-get update \
-  && apt-get install -y google-chrome-stable \
+# Install Tini (lightweight init) to properly reap zombie processes spawned by Chrome,
+# Chromium and its matching ChromeDriver from Debian repos (always version-compatible),
+# plus the minimal system deps needed to run a headless browser.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  tini \
+  chromium \
+  chromium-driver \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
@@ -26,5 +22,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Environment variables should be passed via --env-file or -e
-# CMD to run the bot
+
+# Tini is the entrypoint: it acts as PID 1 and reaps zombie processes so that
+# Chrome subprocesses (renderer, GPU, etc.) are properly cleaned up after each cycle.
+ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["python", "main.py"]
